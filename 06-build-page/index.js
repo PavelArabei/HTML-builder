@@ -16,19 +16,15 @@ const htmlDestinationPath = join(directoryPath, 'index.html');
 const stylesBundlePath = join(directoryPath, 'style.css');
 const stylesPath = join(__dirname, 'styles');
 
-const sourseAssetsPath = join(__dirname, 'assets');
+const sourceAssetsPath = join(__dirname, 'assets');
 const destinationAssetsPath = join(directoryPath, 'assets');
 
 async function start() {
   await removeDirectory(directoryPath);
   await createDirectory(directoryPath);
 
-  await findAndReplaceTags(
-    htmlSourcePath,
-    htmlTemplatePath,
-    htmlDestinationPath,
-  );
-  await mergeStyles(stylesPath, stylesBundlePath);
-  await deepCopy(sourseAssetsPath, destinationAssetsPath);
+  findAndReplaceTags(htmlSourcePath, htmlTemplatePath, htmlDestinationPath);
+  mergeStyles(stylesPath, stylesBundlePath);
+  deepCopy(sourceAssetsPath, destinationAssetsPath);
 }
 start();
