@@ -5,7 +5,13 @@
   "scripts": {
     "lint": "eslint .",
     "format": "prettier --write .",
-    "ci:format": "prettier --check ."
+    "ci:format": "prettier --check .",
+    "task1": "node 01-read-file",
+    "task2": "node 02-write-file",
+    "task3": "node 03-copy-file",
+    "task4": "node 04-copy-directory",
+    "task5": "node 05-create-directory",
+    "task6": "node 06-merge-styles"
   },
   "author": "evgeniimal",
   "license": "ISC",
