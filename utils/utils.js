@@ -1,5 +1,13 @@
-const { mkdir, readdir, stat, rm, copyFile } = require('node:fs/promises');
-const { join } = require('node:path');
+const {
+  readFile,
+  mkdir,
+  readdir,
+  stat,
+  rm,
+  copyFile,
+} = require('node:fs/promises');
+const { join, extname, basename } = require('node:path');
+const { createWriteStream, createReadStream } = require('node:fs');
 
 const createDirectory = async (path) => {
   try {
@@ -22,6 +30,14 @@ const readDirectory = async (path) => {
     return await readdir(path);
   } catch (error) {
     console.error('Error reading directory', error);
+  }
+};
+
+const readF = async (path) => {
+  try {
+    return await readFile(path, 'utf-8');
+  } catch (error) {
+    console.error('Error reading file', error);
   }
 };
 
@@ -59,10 +75,52 @@ const deepCopy = async (sourcePath, destinationPath) => {
   }
 };
 
+async function mergeStyles(sourcePath, destinationPath) {
+  await removeDirectory(destinationPath);
+  const fileNames = await readDirectory(sourcePath);
+  if (!fileNames) return;
+
+  const writeStream = createWriteStream(destinationPath, { flags: 'a' });
+
+  for await (const fileName of fileNames) {
+    const fileException = extname(fileName);
+    if (fileException !== '.css') continue;
+
+    const filePath = join(sourcePath, fileName);
+    const stream = createReadStream(filePath);
+    stream.pipe(writeStream);
+  }
+}
+
+async function findAndReplaceTags(
+  htmlSourcePath,
+  htmlTemplatePath,
+  htmlDestinationPath,
+) {
+  let template = await readF(htmlTemplatePath);
+  if (!template) return;
+
+  const fileNames = await readDirectory(htmlSourcePath);
+  if (!fileNames) return;
+
+  for await (const fileName of fileNames) {
+    const filePath = join(htmlSourcePath, fileName);
+    const tagName = basename(fileName, extname(fileName));
+    const content = await readF(filePath);
+    template = template.replace(`{{${tagName}}}`, content);
+  }
+
+  const writableStream = createWriteStream(htmlDestinationPath, { flags: 'a' });
+  writableStream.write(template);
+}
+
 module.exports = {
   createDirectory,
   readDirectory,
   getStats,
   deepCopy,
   removeDirectory,
+  mergeStyles,
+  readF,
+  findAndReplaceTags,
 };
