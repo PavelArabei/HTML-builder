@@ -75,21 +75,37 @@ const deepCopy = async (sourcePath, destinationPath) => {
   }
 };
 
+async function isFileWithExtension(filePath, fileName, extension) {
+  const stats = await getStats(filePath);
+  const fileException = extname(fileName);
+  return stats.isFile() && fileException === extension;
+}
+
 async function mergeStyles(sourcePath, destinationPath) {
   await removeDirectory(destinationPath);
   const fileNames = await readDirectory(sourcePath);
   if (!fileNames) return;
 
   const writeStream = createWriteStream(destinationPath, { flags: 'a' });
-
+  const writePromises = [];
   for await (const fileName of fileNames) {
-    const fileException = extname(fileName);
-    if (fileException !== '.css') continue;
-
     const filePath = join(sourcePath, fileName);
+    const isFileExc = await isFileWithExtension(filePath, fileName, '.css');
+    if (!isFileExc) continue;
     const stream = createReadStream(filePath);
-    stream.pipe(writeStream);
+    const writePromise = new Promise((resolve, reject) => {
+      stream
+        .on('error', reject)
+        .on('end', resolve)
+        .pipe(writeStream, { end: false });
+    });
+    writePromises.push(writePromise);
+
+    stream.pipe(writeStream, { end: false });
   }
+
+  await Promise.all(writePromises);
+  writeStream.end();
 }
 
 async function findAndReplaceTags(
@@ -105,6 +121,8 @@ async function findAndReplaceTags(
 
   for await (const fileName of fileNames) {
     const filePath = join(htmlSourcePath, fileName);
+    const isFileExc = await isFileWithExtension(filePath, fileName, '.html');
+    if (!isFileExc) continue;
     const tagName = basename(fileName, extname(fileName));
     const content = await readF(filePath);
     template = template.replace(`{{${tagName}}}`, content);
